@@ -120,6 +120,43 @@ walkaddr(pagetable_t pagetable, uint64 va)
   return pa;
 }
 
+// 检测虚拟地址va开始的size大小的页面的PTE_A是否为1 并且设置mask位
+// 清空为PTE_A为1的页表项 保证下次是1的是access的页面
+uint64 pgaccess(pagetable_t pagetable, uint64 va, uint64 pagenum, uint64 u_addr)
+{
+  // 限定最长页数不超过64页
+  if (pagenum > 64)
+  {
+    return -1;
+  }
+  // if (va%PGSIZE)
+  // {
+  //   return -1;
+  // }
+  
+  uint64 start,mask,v_va;
+  mask=0;
+  v_va=va;
+  for (int i = 0; i < pagenum; i++)
+  {
+    start = PGROUNDDOWN(v_va);
+    pte_t *p=walk(pagetable,start,0);
+    if (p==0)
+    {
+      return -1;
+    }
+    if (PTE_A & *p)
+    {
+      mask |= 1<<i;
+      *p &= ~PTE_A;//清空对应access位置
+    }
+    v_va += PGSIZE;
+  }
+  copyout(pagetable,u_addr,(char *)&mask,sizeof(mask));
+  
+  return pagenum;
+}
+
 // add a mapping to the kernel page table.
 // only used when booting.
 // does not flush TLB or enable paging.
@@ -280,6 +317,35 @@ freewalk(pagetable_t pagetable)
   }
   kfree((void*)pagetable);
 }
+
+void vmprintRecursive(pagetable_t pagetable, int level)
+{
+  if (level > 3)
+  {
+    return;
+  }
+  for (int i = 0; i < 512; i++)
+  {
+    pte_t pte = pagetable[i];
+    if (pte & PTE_V)
+    {
+      for (int k = 0; k < level; k++)
+      {
+        printf(" ..");
+      }
+      uint64 pa = PTE2PA(pte);
+      printf("%d: pte %p pa %p\n", i, pte, pa);
+      vmprintRecursive((pagetable_t)pa, level+1);
+    }
+  }
+}
+
+void vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  vmprintRecursive(pagetable, 1);
+}
+
 
 // Free user memory pages,
 // then free page-table pages.
