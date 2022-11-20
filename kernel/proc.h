@@ -105,4 +105,11 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  // signal
+  void (*handler) (); // 信号响应函数
+  int ticks; // 信号响应ticks
+  int pass_ticks; // 记录上一次handler之后过去的ticks
+  struct trapframe *signal_trapframe;// 存储中断前的上下文以便恢复
+  int has_return;
 };

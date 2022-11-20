@@ -52,6 +52,7 @@ test0()
     if(count > 0)
       break;
   }
+  printf("count in test0:%d\n",count);
   sigalarm(0, 0);
   if(count > 0){
     printf("test0 passed\n");
@@ -146,6 +147,7 @@ slow_handler()
   count++;
   printf("alarm!\n");
   if (count > 1) {
+    printf("%d\n",count);
     printf("test2 failed: alarm handler called more than once\n");
     exit(1);
   }

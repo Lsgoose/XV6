@@ -77,8 +77,32 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
+  if(which_dev == 2){
+    // printf("In trap pass_ticks:%d   ticks:%d    epc:%p\n",p->pass_ticks,p->ticks,p->trapframe->epc);
+    if (p->ticks==0)
+    {
+      yield();
+      usertrapret();
+    }
+    else
+    {
+      int pass_ticks=p->pass_ticks+1;
+      if (pass_ticks>=p->ticks&&p->has_return==1)
+      {
+        // 记录时钟中断前上下文
+        p->signal_trapframe=(struct trapframe*)kalloc();
+        memmove(p->signal_trapframe,p->trapframe,sizeof(struct trapframe));
+        // 调整返回执行地址
+        p->trapframe->epc=(uint64)p->handler;
+        p->has_return=0;
+      }
+      else
+      {
+        p->pass_ticks=pass_ticks;
+      }
+    }
     yield();
+  }
 
   usertrapret();
 }
