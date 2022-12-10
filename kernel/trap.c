@@ -65,11 +65,21 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if(r_scause() == 15){// Store/AMO page fault
+    // 取出无法翻译的地址
+    // printf("cow\n");
+    uint64 va=r_stval();
+    if(handler_cow_pagefault(p->pagetable, va)<0){
+      //杀死进程
+      p->killed=1;
+    }
+    // printf("after set cow\n");
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    printf("            ra:%p\n",p->trapframe->ra);
     p->killed = 1;
   }
 
