@@ -20,6 +20,7 @@ barrier_init(void)
   assert(pthread_mutex_init(&bstate.barrier_mutex, NULL) == 0);
   assert(pthread_cond_init(&bstate.barrier_cond, NULL) == 0);
   bstate.nthread = 0;
+  bstate.round = 0;
 }
 
 static void 
@@ -30,8 +31,57 @@ barrier()
   // Block until all threads have called barrier() and
   // then increment bstate.round.
   //
-  
+  // printf("1\n");
+  pthread_mutex_lock(&bstate.barrier_mutex);
+  // printf("2\n");
+  bstate.nthread++;
+  if (bstate.nthread!=nthread)
+  {
+    pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
+  }
+  else
+  {
+    bstate.round++;
+    bstate.nthread=0;
+    pthread_cond_broadcast(&bstate.barrier_cond);
+  }
+  // bstate.nthread--;
+  // printf("3\n");
+  pthread_mutex_unlock(&bstate.barrier_mutex);
+  // printf("4\n");
 }
+
+// static void 
+// barrier()
+// {
+//   // YOUR CODE HERE
+//   //
+//   // Block until all threads have called barrier() and
+//   // then increment bstate.round.
+//   //
+//   // printf("1\n");
+//   pthread_mutex_lock(&bstate.barrier_mutex);
+//   bstate.nthread++;
+//   printf("2\n");
+//   printf("nthread: %d\n",bstate.nthread);
+//   while (bstate.nthread!=nthread)
+//   {
+//     pthread_cond_wait(&bstate.barrier_cond, &bstate.barrier_mutex);
+//     printf("loop\n");
+//   }
+//   if(bstate.nthread==nthread)
+//   {
+//     bstate.round++;
+//     pthread_cond_broadcast(&bstate.barrier_cond);
+//   }
+//   bstate.nthread--;
+//   printf("decrease nthread: %d\n",bstate.nthread);
+
+//   // bstate.nthread--;
+//   // printf("3\n");
+//   pthread_mutex_unlock(&bstate.barrier_mutex);
+//   // printf("4\n");
+// }
 
 static void *
 thread(void *xa)
@@ -42,6 +92,7 @@ thread(void *xa)
 
   for (i = 0; i < 20000; i++) {
     int t = bstate.round;
+    // printf("i: %d,t: %d\n",i,t);
     assert (i == t);
     barrier();
     usleep(random() % 100);
@@ -65,7 +116,6 @@ main(int argc, char *argv[])
   nthread = atoi(argv[1]);
   tha = malloc(sizeof(pthread_t) * nthread);
   srandom(0);
-
   barrier_init();
 
   for(i = 0; i < nthread; i++) {
