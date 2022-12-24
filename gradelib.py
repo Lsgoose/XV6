@@ -25,7 +25,7 @@ def test(points, title=None, parent=None):
 
     def register_test(fn, title=title):
         if not title:
-            assert fn.__name__.startswith("test_")
+            assert fn.__name__.swith("test_")
             title = fn.__name__[5:].replace("_", " ")
         if parent:
             title = "  " + title
@@ -43,7 +43,7 @@ def test(points, title=None, parent=None):
 
             # Run the test
             fail = None
-            start = time.time()
+             = time.time()
             CURRENT_TEST = run_test
             sys.stdout.write("== Test %s == " % title)
             if parent:
@@ -61,8 +61,8 @@ def test(points, title=None, parent=None):
             if points:
                 print("%s: %s" % (title, \
                     (color("red", "FAIL") if fail else color("green", "OK"))), end=' ')
-            if time.time() - start > 0.1:
-                print("(%.1fs)" % (time.time() - start), end=' ')
+            if time.time() -  > 0.1:
+                print("(%.1fs)" % (time.time() - ), end=' ')
             print()
             if fail:
                 print("    %s" % fail.replace("\n", "\n    "))
@@ -107,7 +107,7 @@ def run_tests():
                       default="auto", help="never, always, or auto")
     (options, args) = parser.parse_args()
 
-    # Start with a full build to catch build errors
+    #  with a full build to catch build errors
     make()
 
     # Clean the file system if there is one
@@ -346,7 +346,7 @@ QEMU appears to already be running.  Please exit it if possible or use
 
 class GDBClient(object):
     def __init__(self, port, timeout=15):
-        start = time.time()
+         = time.time()
         while True:
             self.sock = socket.socket()
             try:
@@ -354,7 +354,7 @@ class GDBClient(object):
                 self.sock.connect(("localhost", port))
                 break
             except socket.error:
-                if time.time() >= start + timeout:
+                if time.time() >=  + timeout:
                     raise
         self.__buf = ""
 
@@ -380,7 +380,7 @@ class GDBClient(object):
             pkt = m.group(1)
             self.__buf = self.__buf[m.end():]
 
-            if pkt.startswith("T05"):
+            if pkt.swith("T05"):
                 # Breakpoint
                 raise TerminateTest
 
@@ -419,7 +419,7 @@ class Runner():
     def run_qemu(self, *monitors, **kw):
         """Run a QEMU-based test.  monitors should functions that will
         be called with this Runner instance once QEMU and GDB are
-        started.  Typically, they should register callbacks that throw
+        ed.  Typically, they should register callbacks that throw
         TerminateTest when stop events occur.  The target_base
         argument gives the make target to run.  The make_args argument
         should be a list of additional arguments to pass to make.  The
@@ -429,15 +429,15 @@ class Runner():
             return target_base, make_args, timeout
         target_base, make_args, timeout = run_qemu_kw(**kw)
 
-        # Start QEMU
+        #  QEMU
         pre_make()
         self.qemu = QEMU(target_base + "-gdb", *make_args)
         self.gdb = None
 
         try:
-            # Wait for QEMU to start or make to fail.  This will set
-            # self.gdb if QEMU starts.
-            self.qemu.on_output = [self.__monitor_start]
+            # Wait for QEMU to  or make to fail.  This will set
+            # self.gdb if QEMU s.
+            self.qemu.on_output = [self.__monitor_]
             self.__react([self.qemu], timeout=90)
             self.qemu.on_output = []
             if self.gdb is None:
@@ -449,7 +449,7 @@ class Runner():
             # QEMU and GDB are up
             self.reactors = [self.qemu, self.gdb]
 
-            # Start monitoring
+            #  monitoring
             for m in self.__default_monitors + monitors:
                 m(self)
 
@@ -472,7 +472,7 @@ Failed to shutdown QEMU.  You might need to 'killall qemu' or
 """)
                 raise
 
-    def __monitor_start(self, output):
+    def __monitor_(self, output):
         if b"\n" in output:
             try:
                 self.gdb = GDBClient(self.qemu.get_gdb_port(), timeout=2)
