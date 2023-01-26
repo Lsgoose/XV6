@@ -395,14 +395,18 @@ sys_chdir(void)
   struct proc *p = myproc();
   
   begin_op();
+  // printf("%d\n",argstr(0, path, MAXPATH));
+  // printf("%d\n",namei(path));
   if(argstr(0, path, MAXPATH) < 0 || (ip = namei(path)) == 0){
     end_op();
+    printf("1\n");
     return -1;
   }
   ilock(ip);
   if(ip->type != T_DIR){
     iunlockput(ip);
     end_op();
+    printf("2\n");
     return -1;
   }
   iunlock(ip);
