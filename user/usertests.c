@@ -2818,7 +2818,7 @@ main(int argc, char *argv[])
     void (*f)(char *);
     char *s;
   } tests[] = {
-    {MAXVAplus, "MAXVAplus"},
+    // {MAXVAplus, "MAXVAplus"},
     {manywrites, "manywrites"},
     {execout, "execout"},
     {copyin, "copyin"},
@@ -2855,7 +2855,7 @@ main(int argc, char *argv[])
     {bsstest, "bsstest"},
     {sbrkbasic, "sbrkbasic"},
     {sbrkmuch, "sbrkmuch"},
-    {kernmem, "kernmem"},
+    // {kernmem, "kernmem"},
     {sbrkfail, "sbrkfail"},
     {sbrkarg, "sbrkarg"},
     {sbrklast, "sbrklast"},

@@ -5,6 +5,10 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "fcntl.h"
+#include "sleeplock.h"
+#include "fs.h"
+#include "file.h"
 
 struct spinlock tickslock;
 uint ticks;
@@ -65,6 +69,41 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if(r_scause()==13 || r_scause()==15){
+    uint64 va=r_stval();
+    for (int i = 0; i < MAXVMA; i++){
+      if (p->p_vma[i].valid && p->p_vma[i].vm_start<=va && va<p->p_vma[i].vm_end){
+        // 分配一个物理页
+        uint64 pa=(uint64)kalloc();
+        if (pa==0){
+          p->killed=1;
+          kfree((void*)pa);
+          break;
+        }
+        memset((void *)pa,0,PGSIZE);
+        // 从文件读内容至物理页中
+        struct inode *ip=p->p_vma[i].fd->ip;
+        uint off=va-p->p_vma[i].vm_start;
+        // printf("off:%d\n",off);
+        ilock(ip);
+        readi(ip,0,pa,off,PGSIZE);
+        iunlock(ip);
+        // 关联虚拟地址和物理页
+        int flags=PTE_U;
+        if (p->p_vma[i].prot&PROT_READ) flags|=PTE_R;
+        if (p->p_vma[i].prot&PROT_WRITE) flags|=PTE_W;
+        if (p->p_vma[i].prot&PROT_EXEC) flags|=PTE_X;
+
+        if (mappages(p->pagetable,PGROUNDDOWN(va),PGSIZE,pa,flags)<0){
+          p->killed=1;
+          kfree((void*)pa);
+          break;
+        }
+
+        break;
+      }
+    }
+    
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {

@@ -1,3 +1,16 @@
+// virtual memory area
+struct vma
+{
+  int valid;
+  uint64 vm_start;// 虚拟地址
+  uint64 vm_end;// 虚拟地址
+  int length;// 地址长度
+  int prot;// 操作文件权限
+  int flags;
+  struct file *fd;// 映射文件
+  int offset;// 从文件offset处开始映射
+};
+
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -105,4 +118,5 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  struct vma p_vma[MAXVMA];    // Virtual Memory Area
 };

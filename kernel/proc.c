@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "fcntl.h"
 
 struct cpu cpus[NCPU];
 
@@ -119,6 +120,9 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  
+  for (int i = 0; i < MAXVMA; i++)
+    p->p_vma[i].valid=0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -281,6 +285,16 @@ fork(void)
     return -1;
   }
 
+  for (int i = 0; i < MAXVMA; i++){
+    if (p->p_vma[i].valid){
+      memmove(&np->p_vma[i],&p->p_vma[i],sizeof(struct vma));
+      filedup(np->p_vma[i].fd);
+    }else{
+      p->p_vma[i].valid=0;
+    }
+    
+  }
+  
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
@@ -352,6 +366,34 @@ exit(int status)
       p->ofile[fd] = 0;
     }
   }
+
+  // 对所有vma进行unmap
+  for (int i = 0; i < MAXVMA; i++){
+    if (p->p_vma[i].valid){
+      // vmaunmap();
+      p->p_vma[i].valid=0;
+      struct file *fd=p->p_vma[i].fd;
+      int share_flag=p->p_vma[i].flags & MAP_SHARED;
+      while (p->p_vma[i].length!=0){
+        uint64 vm_start=p->p_vma[i].vm_start;
+        uint64 vm_end=PGROUNDDOWN(vm_start)+PGSIZE;
+        // share标记写回 每次释放一个页面
+        uint n = vm_end-vm_start;
+        if (n>p->p_vma[i].vm_end-vm_start)
+          n=p->p_vma[i].vm_end-vm_start;
+        if (share_flag)
+          filewrite(fd,vm_start,n);
+        // 存在映射 则取消映射 
+        if (walkaddr(p->pagetable,vm_start))
+          uvmunmap(p->pagetable,PGROUNDDOWN(vm_start),1,1);
+        // 更新vma区域
+        p->p_vma[i].length-=n;
+        p->p_vma[i].vm_start+=n;
+      }
+      fileclose(p->p_vma[i].fd);
+    }
+  }
+  
 
   begin_op();
   iput(p->cwd);
